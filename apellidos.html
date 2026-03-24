@@ -1,21 +1,552 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Apellidos</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Factorial Calculator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:wght@300;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #111118;
+      --border: #1e1e2e;
+      --accent: #e8ff4a;
+      --accent2: #4affd4;
+      --text: #f0f0f8;
+      --muted: #5a5a7a;
+      --danger: #ff4a6e;
+      --glow: rgba(232,255,74,0.18);
+    }
+
+    body {
+      font-family: 'Syne', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* Animated background grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(232,255,74,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(232,255,74,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      animation: gridPan 20s linear infinite;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes gridPan {
+      0%   { transform: translate(0,0); }
+      100% { transform: translate(40px, 40px); }
+    }
+
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.12;
+      pointer-events: none;
+      z-index: 0;
+      animation: blobFloat 8s ease-in-out infinite alternate;
+    }
+    .blob1 { width: 400px; height: 400px; background: var(--accent); top: -100px; left: -100px; }
+    .blob2 { width: 300px; height: 300px; background: var(--accent2); bottom: -80px; right: -80px; animation-delay: -3s; }
+
+    @keyframes blobFloat {
+      from { transform: translate(0,0) scale(1); }
+      to   { transform: translate(30px, 20px) scale(1.1); }
+    }
+
+    /* Card */
+    .card {
+      position: relative;
+      z-index: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 48px 44px 44px;
+      width: 440px;
+      max-width: 95vw;
+      box-shadow: 0 0 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03) inset;
+      animation: cardIn 0.7s cubic-bezier(0.16,1,0.3,1) both;
+    }
+
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(40px) scale(0.96); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: rgba(232,255,74,0.08);
+      border: 1px solid rgba(232,255,74,0.2);
+      border-radius: 6px;
+      padding: 4px 10px;
+      display: inline-block;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      font-size: 2.4rem;
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      margin-bottom: 6px;
+    }
+
+    h1 span { color: var(--accent); }
+
+    .sub {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 36px;
+    }
+
+    /* Input row */
+    .input-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .input-wrap {
+      position: relative;
+      flex: 1;
+    }
+
+    .input-wrap::before {
+      content: 'n';
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-family: 'JetBrains Mono', monospace;
+      font-style: italic;
+      color: var(--muted);
+      font-size: 15px;
+      pointer-events: none;
+      transition: color 0.2s;
+    }
+
+    input[type=number] {
+      width: 100%;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px 14px 34px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 16px;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      -moz-appearance: textfield;
+    }
+
+    input[type=number]::-webkit-outer-spin-button,
+    input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+    input[type=number]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(232,255,74,0.1);
+    }
+
+    input[type=number]:focus ~ .input-wrap::before { color: var(--accent); }
+
+    .btn {
+      background: var(--accent);
+      color: #0a0a0f;
+      border: none;
+      border-radius: 12px;
+      padding: 14px 20px;
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: transform 0.15s, box-shadow 0.15s, background 0.2s;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(232,255,74,0.3);
+    }
+
+    .btn:active { transform: scale(0.97); }
+
+    .btn svg { width: 15px; height: 15px; }
+
+    /* Result area */
+    .result-box {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      min-height: 100px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      transition: border-color 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .result-box.has-result {
+      border-color: rgba(232,255,74,0.25);
+    }
+
+    .result-box.has-error {
+      border-color: rgba(255,74,110,0.25);
+    }
+
+    .result-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .result-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(18px, 4vw, 26px);
+      font-weight: 500;
+      color: var(--accent);
+      word-break: break-all;
+      line-height: 1.3;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.4s, transform 0.4s;
+    }
+
+    .result-value.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .result-value.error-text {
+      color: var(--danger);
+      font-size: 14px;
+    }
+
+    .result-eq {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 6px;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 0.4s 0.1s, transform 0.4s 0.1s;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .result-eq.show { opacity: 1; transform: translateY(0); }
+
+    /* Shimmer effect on result box */
+    .result-box::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent 0%, rgba(232,255,74,0.04) 50%, transparent 100%);
+      transform: translateX(-100%);
+      pointer-events: none;
+    }
+
+    .result-box.flash::after {
+      animation: shimmer 0.6s ease-out;
+    }
+
+    @keyframes shimmer {
+      from { transform: translateX(-100%); }
+      to   { transform: translateX(100%); }
+    }
+
+    /* Digits counter */
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 14px;
+    }
+
+    .meta-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .digits-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      background: rgba(74,255,212,0.08);
+      border: 1px solid rgba(74,255,212,0.15);
+      color: var(--accent2);
+      border-radius: 6px;
+      padding: 3px 8px;
+      opacity: 0;
+      transition: opacity 0.3s 0.2s;
+    }
+
+    .digits-badge.show { opacity: 1; }
+
+    /* Copy button */
+    .copy-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: none;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .copy-btn.show { display: flex; }
+    .copy-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+
+    /* Steps toggle */
+    .steps-toggle {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      cursor: pointer;
+      letter-spacing: 0.1em;
+      padding: 0;
+      margin-top: 10px;
+      transition: color 0.2s;
+      display: none;
+    }
+
+    .steps-toggle.show { display: block; }
+    .steps-toggle:hover { color: var(--accent); }
+
+    .steps-list {
+      margin-top: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 2;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(0.16,1,0.3,1);
+    }
+
+    .steps-list.open { max-height: 300px; }
+
+    .steps-list span.hl { color: var(--accent2); }
+  </style>
 </head>
 <body>
+  <div class="blob blob1"></div>
+  <div class="blob blob2"></div>
 
-    <h2>Mostrar Nombre</h2>
-    <button onclick="mostrarNombre()">Mostrar</button>
+  <div class="card">
+    <div class="badge">RICALDI - JAVIER</div>
+    <h1>Factorial<br><span>Calcudora</span></h1>
+    <p class="sub">// f(n) = n × (n-1) × ... × 1</p>
 
-    <p id="resultado"></p>
+    <div class="input-row">
+      <div class="input-wrap">
+        <input type="number" id="numero" placeholder="0" min="0" max="170" autocomplete="off" oninput="liveValidate()"/>
+      </div>
+      <button class="btn" onclick="calcularFactorial()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
+        Calcular
+      </button>
+    </div>
 
-    <script>
-        function mostrarNombre() {
-            document.getElementById("resultado").innerHTML = 
-                "MAYLON AMILCAR RICALDI SOLIS<br>DAYANA JESSICA JAVIER CURI";
-        }
-    </script>
+    <div class="result-box" id="resultBox">
+      <div class="result-label">Resultado</div>
+      <div class="result-value" id="resultValue">—</div>
+      <div class="result-eq" id="resultEq"></div>
+    </div>
 
+    <div class="meta">
+      <span class="meta-tag" id="metaTime"></span>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="copy-btn" id="copyBtn" onclick="copyResult()">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          COPIAR
+        </button>
+        <span class="digits-badge" id="digitsBadge"></span>
+      </div>
+    </div>
+
+    <button class="steps-toggle" id="stepsToggle" onclick="toggleSteps()">▶ VER PASOS</button>
+    <div class="steps-list" id="stepsList"></div>
+  </div>
+
+  <script>
+    let lastResult = '';
+    let stepsOpen = false;
+
+    function liveValidate() {
+      const num = parseInt(document.getElementById('numero').value);
+      const box = document.getElementById('resultBox');
+      box.classList.remove('has-error');
+      if (num > 170) {
+        showError('Máximo permitido: 170 (desbordamiento numérico)');
+      }
+    }
+
+    function showError(msg) {
+      const val = document.getElementById('resultValue');
+      const box = document.getElementById('resultBox');
+      val.className = 'result-value error-text';
+      val.textContent = '⚠ ' + msg;
+      setTimeout(() => val.classList.add('show'), 10);
+      box.classList.add('has-error');
+      document.getElementById('digitsBadge').classList.remove('show');
+      document.getElementById('copyBtn').classList.remove('show');
+      document.getElementById('stepsToggle').classList.remove('show');
+      document.getElementById('resultEq').classList.remove('show');
+      document.getElementById('metaTime').textContent = '';
+    }
+
+    function calcularFactorial() {
+      const input = document.getElementById('numero');
+      const num = parseInt(input.value);
+      const box = document.getElementById('resultBox');
+      const val = document.getElementById('resultValue');
+      const eq  = document.getElementById('resultEq');
+
+      if (input.value === '' || isNaN(num)) { showError('Ingresa un número válido'); return; }
+      if (num < 0) { showError('Solo números no negativos'); return; }
+      if (num > 170) { showError('Máximo 170 — desbordamiento numérico'); return; }
+
+      // Reset animation
+      val.classList.remove('show');
+      eq.classList.remove('show');
+      box.classList.remove('flash', 'has-result', 'has-error');
+
+      const t0 = performance.now();
+
+      // Compute steps
+      let factorial = BigInt(1);
+      const steps = [];
+      for (let i = 1; i <= num; i++) {
+        factorial *= BigInt(i);
+        steps.push(i);
+      }
+
+      const t1 = performance.now();
+      const elapsed = (t1 - t0).toFixed(3);
+
+      const resultStr = factorial.toString();
+      lastResult = resultStr;
+
+      // Build equation string (trimmed for large numbers)
+      let eqStr = '';
+      if (num <= 12) {
+        eqStr = steps.join(' × ') + ' = ' + resultStr;
+      } else {
+        eqStr = `1 × 2 × ... × ${num} = ${resultStr.length > 20 ? resultStr.slice(0,18) + '…' : resultStr}`;
+      }
+
+      // Build steps list
+      buildSteps(num, steps, factorial);
+
+      setTimeout(() => {
+        val.className = 'result-value';
+        val.textContent = resultStr.length > 30
+          ? resultStr.slice(0, 28) + '…'
+          : resultStr;
+        eq.textContent = eqStr;
+
+        void box.offsetWidth; // force reflow
+        box.classList.add('has-result', 'flash');
+
+        setTimeout(() => {
+          val.classList.add('show');
+          eq.classList.add('show');
+        }, 20);
+
+        document.getElementById('digitsBadge').textContent = resultStr.length + ' dígitos';
+        document.getElementById('digitsBadge').classList.add('show');
+        document.getElementById('copyBtn').classList.add('show');
+        document.getElementById('metaTime').textContent = `⏱ ${elapsed}ms`;
+        document.getElementById('stepsToggle').classList.add('show');
+      }, 60);
+    }
+
+    function buildSteps(num, steps, factorial) {
+      const list = document.getElementById('stepsList');
+      list.innerHTML = '';
+      if (num === 0) {
+        list.innerHTML = '<span class="hl">0!</span> = 1  (por definición)';
+        return;
+      }
+      let acc = BigInt(1);
+      const limit = Math.min(num, 10);
+      for (let i = 1; i <= limit; i++) {
+        acc *= BigInt(i);
+        const line = document.createElement('div');
+        line.innerHTML = `${i}! = <span class="hl">${acc.toString()}</span>`;
+        list.appendChild(line);
+      }
+      if (num > 10) {
+        const more = document.createElement('div');
+        more.innerHTML = `<span style="color:var(--muted)">... ${num - 10} pasos más ...</span>`;
+        list.appendChild(more);
+        const last = document.createElement('div');
+        last.innerHTML = `${num}! = <span class="hl">${factorial.toString().slice(0,24)}…</span>`;
+        list.appendChild(last);
+      }
+    }
+
+    function toggleSteps() {
+      stepsOpen = !stepsOpen;
+      const list = document.getElementById('stepsList');
+      const btn  = document.getElementById('stepsToggle');
+      list.classList.toggle('open', stepsOpen);
+      btn.textContent = stepsOpen ? '▼ OCULTAR PASOS' : '▶ VER PASOS';
+    }
+
+    function copyResult() {
+      if (!lastResult) return;
+      navigator.clipboard.writeText(lastResult).then(() => {
+        const btn = document.getElementById('copyBtn');
+        btn.textContent = '✓ COPIADO';
+        setTimeout(() => {
+          btn.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>COPIAR`;
+        }, 1500);
+      });
+    }
+
+    // Enter key support
+    document.getElementById('numero').addEventListener('keydown', e => {
+      if (e.key === 'Enter') calcularFactorial();
+    });
+  </script>
 </body>
 </html>
